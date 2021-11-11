@@ -6,6 +6,7 @@ Se desarrollará un programa que permita guardar información encriptada y firma
 > virtualenv env
 > cd env\Scripts
 > activate
+...
 > python -m pip install -r requirements.txt
 
 ```
