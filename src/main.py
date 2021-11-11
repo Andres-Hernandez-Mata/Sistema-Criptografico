@@ -4,6 +4,7 @@ import base64
 from nacl.signing import SigningKey
 from nacl.hash import blake2b
 
+# Sistema
 def genKeyPair():
     kp = SigningKey.generate()
     pubKey = binascii.hexlify(kp.to_curve25519_private_key().public_key.__bytes__()).decode("utf-8")
