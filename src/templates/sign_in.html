@@ -3,32 +3,48 @@
   <head>
     <title>Sistema Criptografico</title>   
     <link href="../static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../static/css/jumbotron-narrow.css" rel="stylesheet">
-    <link href="../static/css/sign_in.css" rel="stylesheet">
-    <script src="../static/js/jquery-1.11.2.js"></script>    
+    <link href="../static/css/jumbotron-narrow.css" rel="stylesheet">    
+    <script src="../static/js/jquery-1.11.2.js"></script>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <nav>
           <ul class="nav nav-pills pull-right">
-            <li role="presentation" ><a href="/">Home</a></li>
-            <li role="presentation" class="active"><a href="#">Sign In</a></li>
-            <li role="presentation" ><a href="/sign_up">Sign Up</a></li>
+            <li><a href="/">Home</a></li>
+            <li class="active"><a href="/">Sign In</a></li>
+            <li><a href="/sign_up">Sign Up</a></li>
           </ul>
         </nav>
         <h3 class="text-muted">Sistema Criptografico</h3>
-      </div>
+      </div>      
       <div class="jumbotron">
-        <h1>Criptografía</h1>
-        <form class="form-signin" action="" method="post">
-          <label for="name" class="sr-only">Usuario</label>
-          <input type="name" name="name" id="name" class="form-control" placeholder="Usuario" required autofocus>
-          <label for="password" class="sr-only">Contraseña</label>
-          <input type="password" name="password" id="password" class="form-control" placeholder="Contraseña" required>
-          <button id="btnSignIn" class="btn btn-lg btn-primary btn-block" type="submit">Sign In</button>
-      </form>
-      </div>  
+        <form class="form-horizontal" role="form">
+          <div class="form-group">
+            <label class="col-lg-2 control-label" for="publica">Clave Pública (.key)</label>            
+            <div class="col-lg-10">
+              <input type="file" id="publica" name="publica" class="form-control-file" required> 
+            </div>
+          </div>
+          <div class="form-group">            
+            <label class="col-lg-2 control-label" for="privada">Clave Privada (.key)</label>                          
+            <div class="col-lg-10">
+              <input type="file" id="privada" name="privada" class="form-control-file" required>              
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="password" class="col-lg-2 control-label">Contraseña</label>
+            <div class="col-lg-4">
+              <input type="password" class="form-control" id="password" placeholder="Contraseña de Clave Privada" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-lg-offset-2 col-md-2">
+              <button type="submit" class="btn btn-lg btn-primary btn-block">Entrar</button>
+            </div>
+          </div>
+        </form>
+      </div>          
       <footer class="footer">
         <p>&copy; LSTI 2021</p>
       </footer>
