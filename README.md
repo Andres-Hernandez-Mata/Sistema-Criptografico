@@ -3,8 +3,10 @@ Se desarrollará un programa que permita guardar información encriptada y firma
 
 ## Instalación
 ```python	
-
-> python -m pip install -r requeriments.txt
+> virtualenv env
+> cd env\Scripts
+> activate
+> python -m pip install -r requirements.txt
 
 ```
 
@@ -13,7 +15,7 @@ Ejecutar el script que se encuentra en la carpeta src del repositorio.
 
 ```python	
 
-> python app.py
+> python main.py
 
 ```
 
