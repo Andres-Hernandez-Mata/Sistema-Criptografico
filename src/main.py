@@ -12,19 +12,19 @@ def genKeyPair():
     secKey = binascii.hexlify(kp.__bytes__())[0:64].decode("utf-8")
     return { "publicKey": pubKey, "secretKey": secKey}
 
-def sign(msg, keyPair):
-    if not 'publicKey' in keyPair or not 'secretKey' in keyPair:
-        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(keyPair))
+def sign(msg, key_pair):
+    if not 'publicKey' in key_pair or not 'secretKey' in key_pair:
+        raise Exception("Invalid key_pair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
     hshBin = hashBin(msg)
     hsh = base64UrlEncode(hshBin)
-    signin_key = SigningKey(toTweetNaclSecretKey(keyPair))
+    signin_key = SigningKey(toTweetNaclSecretKey(key_pair))
     sigBin = signin_key.sign(hshBin).signature
-    return {'usuario': msg, 'hash': hsh, 'sig': binToHex(sigBin), 'pubKey': keyPair['publicKey']}
+    return {'usuario': msg, 'hash': hsh, 'sig': binToHex(sigBin), 'pubKey': key_pair['publicKey']}
 
-def toTweetNaclSecretKey(keyPair):
-    if not 'publicKey' in keyPair or not 'secretKey' in keyPair:
-        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(keyPair))
-    return hexToBin(keyPair["secretKey"] + keyPair["publicKey"])
+def toTweetNaclSecretKey(key_pair):
+    if not 'publicKey' in key_pair or not 'secretKey' in key_pair:
+        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
+    return hexToBin(key_pair["secretKey"] + key_pair["publicKey"])
 
 def writeBinary(data: str, path: str):
     with open(path, 'w') as file:
@@ -58,11 +58,11 @@ def encript(data: bytes, password: bytes):
             i = 0
     return base64.encodebytes(fromListOfBytesToBytes(intBytesToCharBytes(data_array_encripted))).decode()
 
-def encriptKeys(keyPair, password):
-    if not 'publicKey' in keyPair or not 'secretKey' in keyPair:
-        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(keyPair))
-    public_key: str = encript(str(keyPair["publicKey"]).encode(), password.encode())
-    secret_key: str = encript(str(keyPair["secretKey"]).encode(), password.encode())
+def encript_keys(key_pair, password):
+    if not 'publicKey' in key_pair or not 'secretKey' in key_pair:
+        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
+    public_key: str = encript(str(key_pair["publicKey"]).encode(), password.encode())
+    secret_key: str = encript(str(key_pair["secretKey"]).encode(), password.encode())
     return {"publicKey": public_key, "secretKey": secret_key}
 
 def binToHex(s: bytes):
@@ -82,11 +82,11 @@ def hexToBin(h: str):
 def registro(usuario, password):
     keys: dict = genKeyPair()
     signed_user: dict = sign(usuario, keys)
-    encriptedKeys: dict = encriptKeys(keys, password)
-    write(json.dumps(signed_user), "public_key.cer")
-    write(json.dumps(signed_user), "public_key.json")
-    write(json.dumps(encriptedKeys), "private_key.cer")
-    write(json.dumps(encriptedKeys), "private_key.json")
+    encripted_keys: dict = encript_keys(keys, password)
+    write(json.dumps(signed_user), "publicKey.cer")
+    write(json.dumps(signed_user), "publicKey.json")
+    write(json.dumps(encripted_keys), "publicKey.cer")
+    write(json.dumps(encripted_keys), "publicKey.json")
 
 def main():
     usuario: str = input("Usuario > ")
