@@ -26,7 +26,7 @@ def toTweetNaclSecretKey(key_pair):
         raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
     return hexToBin(key_pair["secretKey"] + key_pair["publicKey"])
 
-def writeBinary(data: str, path: str):
+def write(data: str, path: str):
     with open(path, 'w') as file:
         file.write(data)
     return 0
@@ -80,13 +80,13 @@ def hexToBin(h: str):
     return binascii.unhexlify(h)
 
 def registro(usuario, password):
-    keys: dict = genKeyPair()
-    signed_user: dict = sign(usuario, keys)
+    keys: dict = genKeyPair()    
+    signed_user: dict = sign(usuario, keys)    
     encripted_keys: dict = encript_keys(keys, password)
     write(json.dumps(signed_user), "publicKey.cer")
     write(json.dumps(signed_user), "publicKey.json")
-    write(json.dumps(encripted_keys), "publicKey.cer")
-    write(json.dumps(encripted_keys), "publicKey.json")
+    write(json.dumps(encripted_keys), "privateKey.key")
+    write(json.dumps(encripted_keys), "privateKey.json")
 
 def main():
     usuario: str = input("Usuario > ")
