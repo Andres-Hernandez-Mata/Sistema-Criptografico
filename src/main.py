@@ -1,100 +1,101 @@
-import json
-import binascii
 import base64
-from os import write
+import pyfiglet as header
+from termcolor import colored
+from nacl.encoding import HexEncoder
+from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
-from nacl.hash import blake2b
 
+def encrypt(data: bytes, password: bytes):
+    encrypted_array: list = []
+    i=0
+    for d in data:
+        encrypted_array.append(((d + password[i]) % 256).to_bytes(1, "big"))
+        i+=1
+        if i >= len(password):
+            i=0
+    return b''.join(encrypted_array)
+
+def decrypt(data: bytes, password: bytes):
+    decrypted_array: list = []
+    i=0
+    for d in data:
+        decrypted_array.append(((d - password[i]) % 256).to_bytes(1, "big"))
+        i+=1
+        if i >= len(password):
+            i=0
+    return b''.join(decrypted_array)
+
+def write(data: bytes, path: str):
+    with open(path, "wb") as file:
+        file.write(data)
+
+def read(path: bytes):
+    with open(path, "rb") as file:
+        return file.read()
 
 def genKeyPair():
-    kp = SigningKey.generate()
-    pubKey = binascii.hexlify(kp.to_curve25519_private_key().public_key.__bytes__()).decode("utf-8")
-    secKey = binascii.hexlify(kp.__bytes__())[0:64].decode("utf-8")
-    return { "publicKey": pubKey, "secretKey": secKey}
+    kp = SigningKey.generate()    
+    return kp._seed
 
-def sign(msg, key_pair):
-    if not 'publicKey' in key_pair or not 'secretKey' in key_pair:
-        raise Exception("Invalid key_pair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
-    hshBin = hashBin(msg)
-    hsh = base64UrlEncode(hshBin)
-    signin_key = SigningKey(toTweetNaclSecretKey(key_pair))
-    sigBin = signin_key.sign(hshBin).signature
-    return {'usuario': msg, 'hash': hsh, 'sig': binToHex(sigBin), 'pubKey': key_pair['publicKey']}
+def bytesToString(data: bytes):
+    return base64.encodebytes(data).decode("utf-8")
 
-def toTweetNaclSecretKey(key_pair):
-    if not 'publicKey' in key_pair or not 'secretKey' in key_pair:
-        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
-    return hexToBin(key_pair["secretKey"] + key_pair["publicKey"])
+def stringToBytes(data: str):
+    return base64.decodebytes(data.encode("utf-8"))
 
-def write(data: str, path: str):
-    with open(path, 'w') as file:
-        file.write(data)
-    return 0
+def sign(username: str, seed: bytes):
+    sign_key = SigningKey(seed)
+    signed_raw = sign_key.sign(username.encode("utf-8"))
+    return signed_raw
 
-def bytesToIntArray(data: bytes):
-    data_array: list = []
-    for d in data:
-        data_array.append(d)
-    return data_array
+def register(username: str, password: str):
+    seed: bytes = genKeyPair()
+    signed: dict = sign(username, seed)
+    write(encrypt(seed, password.encode("utf-8")), "andres.key")
+    #print(signed)
+    write(signed, "andres.cer")
 
-def intBytesToCharBytes(data: list):
-    fromArray: list = []
-    for a in data:
-        fromArray.append(a.to_bytes(1, "big"))
-    return fromArray
-
-def fromListOfBytesToBytes(data: list):
-    return b''.join(data)
-
-def encript(data: bytes, password: bytes):
-    data_array: list = bytesToIntArray(data)
-    data_password_array: list = bytesToIntArray(password)
-    data_array_encripted: list = []
-    i = 0
-    for x in data_array:
-        data_array_encripted.append(((x + data_password_array[i]) % 256))
-        i+=1
-        if(i >= len(data_password_array)):
-            i = 0
-    return base64.encodebytes(fromListOfBytesToBytes(intBytesToCharBytes(data_array_encripted))).decode()
-
-def encript_keys(key_pair, password):
-    if not 'publicKey' in key_pair or not 'secretKey' in key_pair:
-        raise Exception("Invalid KeyPair: expected to find keys of name 'secretKey' and 'publicKey': " + json.dumps(key_pair))
-    public_key: str = encript(str(key_pair["publicKey"]).encode(), password.encode())
-    secret_key: str = encript(str(key_pair["secretKey"]).encode(), password.encode())
-    return {"publicKey": public_key, "secretKey": secret_key}
-
-def binToHex(s: bytes):
-    return binascii.hexlify(s).decode('UTF-8')
-
-def hashBin(s):
-    s = bytes(s, "utf-8")
-    return binascii.unhexlify(blake2b(data=s, digest_size=32))
-
-def base64UrlEncode(s: bytes):
-    base = base64.urlsafe_b64encode(s)
-    return base.decode("utf-8")
-
-def hexToBin(h: str):
-    return binascii.unhexlify(h)
-
-def registro(usuario, password):
-    keys: dict = genKeyPair()    
-    signed_user: dict = sign(usuario, keys)    
-    encripted_keys: dict = encript_keys(keys, password)
-    write(json.dumps(signed_user), "publicKey.cer")
-    write(json.dumps(signed_user), "publicKey.json")
-    write(json.dumps(encripted_keys), "privateKey.key")
-    write(json.dumps(encripted_keys), "privateKey.json")
+def login(password: str):
+    seed: bytes = decrypt(read("andres.key"), password.encode("utf-8"))
+    signed_raw: bytes = read("andres.cer")
+    #print(signed_raw)
+    verify_key = SigningKey(seed).verify_key
+    #print(verify_key._key)
+    try:        
+        verify_key.verify(signed_raw)
+        print(colored("El usuario es valido!", "green", attrs=["bold"]))
+    except BadSignatureError:
+        print(colored("El usuario no es valido!", "red", attrs=["bold"]))
 
 def main():
-    usuario: str = input("Usuario > ")
-    password: str = input("Contraseña > ")
-    registro(usuario, password)
-    return 0
+    while(True):
+        banner = header.figlet_format("Sistema Criptografico")
+        print(colored(banner.rstrip("\n"), "red", attrs=["bold"]))        
+        print(colored("[1] Login", "blue", attrs=["bold"]))
+        print(colored("[2] Registro", "blue", attrs=["bold"]))
+        print(colored("[3] Salir", "blue", attrs=["bold"]))
+        opc = int(input(colored("[*] Selecciona una opción > ", "blue", attrs=["bold"])))
+        #si se elige 1 manda al login
+        if opc == 1:            
+            passw = input((colored("\nIngresa la contraseña > ", "blue", attrs=["bold"])))
+            #aqui se comprobaría la existencia del usuario
+            login(passw)            
+        #si se elige 2 manda al registro
+        if opc == 2:
+            user = input((colored("Ingresa el nombre de usuario > ", "blue", attrs=["bold"])))
+            passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
+            passwConf = input((colored("Ingresa de nuevo la contraseña > ", "blue", attrs=["bold"])))
+            #para verificar la contraseña
+            while (passw != passwConf):
+                print(colored("Las contraseñas no coinciden, ingresa nuevamente", "red", attrs=["bold"]))
+                user = input((colored("Ingresa el nombre de usuario > ", "blue", attrs=["bold"])))
+                passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
+                passwConf = input((colored("Ingresa de nuevo la contraseña > ", "blue", attrs=["bold"])))
+            #print(colored("Listo!, usuario registrado exitosamente.", "green", attrs=["bold"]))
+            register(user, passw)            
+        if opc < 1 or opc > 2:
+            print(colored("Hasta luego!", "blue", attrs=["bold"]))
+            break
 
 if __name__ == "__main__":
     main()
-
-
