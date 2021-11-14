@@ -1,9 +1,12 @@
+import os
 import base64
 import pyfiglet as header
 from termcolor import colored
 from nacl.encoding import HexEncoder
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
+
+clear = lambda: os.system("cls" if os.name=="nt" else "clear")
 
 def encrypt(data: bytes, password: bytes):
     encrypted_array: list = []
@@ -56,16 +59,75 @@ def register(username: str, password: str):
     write(signed, "andres.cer")
 
 def login(password: str):
+    global valor
     seed: bytes = decrypt(read("andres.key"), password.encode("utf-8"))
     signed_raw: bytes = read("andres.cer")
     #print(signed_raw)
     verify_key = SigningKey(seed).verify_key
     #print(verify_key._key)
     try:        
-        verify_key.verify(signed_raw)
+        verify_key.verify(signed_raw)        
         print(colored("El usuario es valido!", "green", attrs=["bold"]))
+        valor = True
     except BadSignatureError:
         print(colored("El usuario no es valido!", "red", attrs=["bold"]))
+        valor = False
+
+#una vez validado el usuario muestra el siguiente menú
+def opc_log(val):
+    while(val == True):
+        banner = header.figlet_format("Mensajeria")
+        print(colored(banner.rstrip("\n"), "red", attrs=["bold"]))
+        print(colored("Bienvenido al sistema de mensajería!", "blue", attrs=["bold"]))        
+        print(colored("[1] Cifrar mensaje", "blue", attrs=["bold"]))
+        print(colored("[2] Descifrar mensaje", "blue", attrs=["bold"]))
+        print(colored("[3] Cerrar sesión", "blue", attrs=["bold"]))
+        eleccion = int(input(colored("[*] Selecciona una opción > ", "blue", attrs=["bold"])))
+        if eleccion == 1:   
+            print(colored("AVISO, este mensaje estará cifrado por cesar!", "red", attrs=["bold"]))
+            mensaje = input(colored("Escribe tu mensaje > ", "blue", attrs=["bold"]))
+            #se envia el mensaje y la llave para encriptar
+            enc_msj(mensaje, 3)
+        elif eleccion == 2:
+            print(colored("Sugerencia: copia y pega abajo el mensaje encriptado", "red", attrs=["bold"]))
+            decode = input(colored("Ingresa el mensaje encriptado > ", "blue", attrs=["bold"]))
+            desenc_msj(decode, 3)
+        elif eleccion < 1 or eleccion > 2:
+            val = False
+
+#para encriptar el mensaje   
+def enc_msj(mensaje, llave_cesar):  
+    global SIMBOLOS
+    SIMBOLOS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
+    resultado = ''
+    for simbolo in mensaje:
+        if simbolo in SIMBOLOS:
+            indiceSimbolo = SIMBOLOS.find(simbolo)
+            indiceNuevo = indiceSimbolo + llave_cesar
+            if indiceNuevo >= len(SIMBOLOS):
+                indiceNuevo = indiceNuevo - len(SIMBOLOS)
+            elif indiceNuevo < 0:
+                indiceNuevo = indiceNuevo + len(SIMBOLOS)
+            resultado = resultado + SIMBOLOS[indiceNuevo]
+        else:
+            resultado = resultado + simbolo
+    print(colored("Mensaje encriptado > " + resultado +'\n' + "apúntalo!", "red", attrs=["bold"]))
+
+#para desencriptar el mensaje   
+def desenc_msj(mensaje, llave_cesar): 
+    resultado = ''
+    for simbolo2 in mensaje:
+        if simbolo2 in SIMBOLOS:
+            indiceSimbolo = SIMBOLOS.find(simbolo2)
+            indiceNuevo = indiceSimbolo - llave_cesar
+            if indiceNuevo >= len(SIMBOLOS):
+                indiceNuevo = indiceNuevo - len(SIMBOLOS)
+            elif indiceNuevo < 0:
+                indiceNuevo = indiceNuevo + len(SIMBOLOS)
+            resultado = resultado + SIMBOLOS[indiceNuevo]
+        else:
+            resultado = resultado + simbolo2
+    print(colored("Mensaje desencriptado > " + resultado, "red", attrs=["bold"]))
 
 def main():
     while(True):
@@ -73,13 +135,16 @@ def main():
         print(colored(banner.rstrip("\n"), "red", attrs=["bold"]))        
         print(colored("[1] Login", "blue", attrs=["bold"]))
         print(colored("[2] Registro", "blue", attrs=["bold"]))
-        print(colored("[3] Salir", "blue", attrs=["bold"]))
+        print(colored("[3] Limpiar", "blue", attrs=["bold"]))
+        print(colored("[4] Salir", "blue", attrs=["bold"]))
         opc = int(input(colored("[*] Selecciona una opción > ", "blue", attrs=["bold"])))
         #si se elige 1 manda al login
         if opc == 1:            
-            passw = input((colored("\nIngresa la contraseña > ", "blue", attrs=["bold"])))
+            passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
             #aqui se comprobaría la existencia del usuario
-            login(passw)            
+            login(passw) 
+            #le mando el valor que se obtiene al validar el usuario
+            opc_log(valor)            
         #si se elige 2 manda al registro
         if opc == 2:
             user = input((colored("Ingresa el nombre de usuario > ", "blue", attrs=["bold"])))
@@ -92,8 +157,10 @@ def main():
                 passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
                 passwConf = input((colored("Ingresa de nuevo la contraseña > ", "blue", attrs=["bold"])))
             #print(colored("Listo!, usuario registrado exitosamente.", "green", attrs=["bold"]))
-            register(user, passw)            
-        if opc < 1 or opc > 2:
+            register(user, passw)
+        if opc == 3:
+            clear()
+        if opc < 1 or opc > 3:
             print(colored("Hasta luego!", "blue", attrs=["bold"]))
             break
 
