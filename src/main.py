@@ -1,7 +1,6 @@
 import os
 import pyfiglet as header
 from termcolor import colored
-from nacl.encoding import HexEncoder
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 
