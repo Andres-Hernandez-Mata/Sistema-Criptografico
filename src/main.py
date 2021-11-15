@@ -1,5 +1,4 @@
 import os
-import base64
 import pyfiglet as header
 from termcolor import colored
 from nacl.encoding import HexEncoder
@@ -19,33 +18,33 @@ def encrypt(data: bytes, password: bytes):
     return b''.join(encrypted_array)
 
 def decrypt(data: bytes, password: bytes):
-    decrypted_array: list = []
-    i=0
-    for d in data:
-        decrypted_array.append(((d - password[i]) % 256).to_bytes(1, "big"))
-        i+=1
-        if i >= len(password):
-            i = 0
-    print("decrypted_array ", decrypted_array)
-    return b''.join(decrypted_array)
+    try:
+        decrypted_array: list = []
+        i=0
+        for d in data:
+            decrypted_array.append(((d - password[i]) % 256).to_bytes(1, "big"))
+            i+=1
+            if i >= len(password):
+                i = 0        
+        return b''.join(decrypted_array)
+    except Exception:
+        pass
 
 def write(data: bytes, path: str):
     with open(path, "wb") as file:
-        file.write(data)
+        file.write(data)    
 
 def read(path: bytes):
-    with open(path, "rb") as file:
-        return file.read()
+    try:
+        with open(path, "rb") as file:
+            return file.read()
+    except FileNotFoundError:        
+        print(colored("No existe el archivo ingresado, %s" % path, "red", attrs=["bold"]))
+        exit()
 
 def genKeyPair():
     kp = SigningKey.generate()    
     return kp._seed
-
-def bytesToString(data: bytes):
-    return base64.encodebytes(data).decode("utf-8")
-
-def stringToBytes(data: str):
-    return base64.decodebytes(data.encode("utf-8"))
 
 def sign(username: str, seed: bytes):
     sign_key = SigningKey(seed)
@@ -57,15 +56,20 @@ def register(username: str, password: str):
     signed: dict = sign(username, seed)
     write(encrypt(seed, password.encode("utf-8")), "{}.key".format(username))    
     write(signed, "{}.cer".format(username))
+    print(colored("Se registro el usuario %s al sistema criptografico" % username, "green", attrs=["bold"]))
+    print(colored("Se genero el certificado y la llave privada", "green", attrs=["bold"]))
 
 def login(privada: bytes, certificado: bytes, password: str):
     global valor
+    #Se usa para cifrar el resultado del cifrado césar
+    global contra_ces
     seed: bytes = decrypt(read(privada), password.encode("utf-8"))
     signed_raw: bytes = read(certificado)    
     verify_key = SigningKey(seed).verify_key    
     try:
         verify_key.verify(signed_raw)        
-        print(colored("Bienvenido al sistema de mensajería!", "blue", attrs=["bold"]))
+        print(colored("Bienvenido al sistema de mensajería!", "green", attrs=["bold"]))
+        contra_ces = password.encode("utf-8")
         valor = True
     except BadSignatureError:
         print(colored("La contraseña es incorrecta!", "red", attrs=["bold"]))
@@ -108,7 +112,9 @@ def enc_msj(mensaje, llave_cesar):
             resultado = resultado + simbolos[indiceNuevo]
         else:
             resultado = resultado + simbolo
-    print(colored("Mensaje encriptado > " + resultado +'\n' + "apúntalo!", "red", attrs=["bold"]))
+    print(colored("Mensaje encriptado > {}\nApúntalo, se genero el archivo cifrado.txt".format(resultado), "green", attrs=["bold"]))
+    #Encripta el resultado después de cifrarlo con césar
+    write(encrypt(resultado.encode("utf-8"), contra_ces), "cifrado.txt")
 
 #Para desencriptar el mensaje   
 def desenc_msj(mensaje, llave_cesar): 
@@ -124,7 +130,7 @@ def desenc_msj(mensaje, llave_cesar):
             resultado = resultado + simbolos[indiceNuevo]
         else:
             resultado = resultado + simbolo2
-    print(colored("Mensaje desencriptado > " + resultado, "red", attrs=["bold"]))
+    print(colored("Mensaje desencriptado > " + resultado, "green", attrs=["bold"]))
 
 def main():
     while(True):
@@ -137,16 +143,21 @@ def main():
         opc = int(input(colored("[*] Selecciona una opción > ", "blue", attrs=["bold"])))
         #Si se elige 1 manda al login
         if opc == 1:            
-            certificado: bytes = input((colored("Certificado (.cer) > ", "blue", attrs=["bold"])))
-            privada: bytes = input((colored("Clave privada (.key) > ", "blue", attrs=["bold"])))
-            passw = input((colored("Contraseña de la clave privada > ", "blue", attrs=["bold"])))
-            #Aqui se comprobaría la existencia del usuario
-            login(privada, certificado, passw) 
+            while(True):
+                certificado: bytes = input((colored("Certificado (.cer) > ", "blue", attrs=["bold"])))
+                privada: bytes = input((colored("Clave privada (.key) > ", "blue", attrs=["bold"])))
+                password = input((colored("Contraseña de la clave privada > ", "blue", attrs=["bold"])))
+                if not certificado or not privada or not password:
+                    print(colored("El certificado, clave privada y contraseña son datos obligatorios!", "red", attrs=["bold"]))
+                else:
+                    #Aqui se comprobaría la existencia del usuario
+                    login(privada, certificado, password)
+                    break
             #Le mando el valor que se obtiene al validar el usuario
-            opc_log(valor)            
+            opc_log(valor)
         #Si se elige 2 manda al registro
         if opc == 2:            
-            #Para verificar la contraseña
+            #Para verificar los datos ingresados
             while(True):
                 user = input((colored("Ingresa el nombre del usuario > ", "blue", attrs=["bold"])))
                 password = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
@@ -154,7 +165,7 @@ def main():
                     print(colored("El nombre del usuario y la contraseña son datos obligatorios!", "red", attrs=["bold"]))
                 else:
                     register(user, password)
-                    break                    
+                    break
         if opc == 3:
             clear()
         if opc < 1 or opc > 3:
