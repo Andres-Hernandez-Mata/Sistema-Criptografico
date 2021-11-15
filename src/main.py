@@ -10,12 +10,12 @@ clear = lambda: os.system("cls" if os.name=="nt" else "clear")
 
 def encrypt(data: bytes, password: bytes):
     encrypted_array: list = []
-    i=0
+    i = 0
     for d in data:
         encrypted_array.append(((d + password[i]) % 256).to_bytes(1, "big"))
         i+=1
         if i >= len(password):
-            i=0
+            i = 0    
     return b''.join(encrypted_array)
 
 def decrypt(data: bytes, password: bytes):
@@ -25,7 +25,8 @@ def decrypt(data: bytes, password: bytes):
         decrypted_array.append(((d - password[i]) % 256).to_bytes(1, "big"))
         i+=1
         if i >= len(password):
-            i=0
+            i = 0
+    print("decrypted_array ", decrypted_array)
     return b''.join(decrypted_array)
 
 def write(data: bytes, path: str):
@@ -54,31 +55,27 @@ def sign(username: str, seed: bytes):
 def register(username: str, password: str):
     seed: bytes = genKeyPair()
     signed: dict = sign(username, seed)
-    write(encrypt(seed, password.encode("utf-8")), "andres.key")
-    #print(signed)
-    write(signed, "andres.cer")
+    write(encrypt(seed, password.encode("utf-8")), "{}.key".format(username))    
+    write(signed, "{}.cer".format(username))
 
-def login(password: str):
+def login(privada: bytes, certificado: bytes, password: str):
     global valor
-    seed: bytes = decrypt(read("andres.key"), password.encode("utf-8"))
-    signed_raw: bytes = read("andres.cer")
-    #print(signed_raw)
-    verify_key = SigningKey(seed).verify_key
-    #print(verify_key._key)
-    try:        
+    seed: bytes = decrypt(read(privada), password.encode("utf-8"))
+    signed_raw: bytes = read(certificado)    
+    verify_key = SigningKey(seed).verify_key    
+    try:
         verify_key.verify(signed_raw)        
-        print(colored("El usuario es valido!", "green", attrs=["bold"]))
+        print(colored("Bienvenido al sistema de mensajería!", "blue", attrs=["bold"]))
         valor = True
     except BadSignatureError:
-        print(colored("El usuario no es valido!", "red", attrs=["bold"]))
+        print(colored("La contraseña es incorrecta!", "red", attrs=["bold"]))
         valor = False
 
-#una vez validado el usuario muestra el siguiente menú
+#Una vez validado el usuario muestra el siguiente menú
 def opc_log(val):
     while(val == True):
         banner = header.figlet_format("Mensajeria")
-        print(colored(banner.rstrip("\n"), "red", attrs=["bold"]))
-        print(colored("Bienvenido al sistema de mensajería!", "blue", attrs=["bold"]))        
+        print(colored(banner.rstrip("\n"), "red", attrs=["bold"]))        
         print(colored("[1] Cifrar mensaje", "blue", attrs=["bold"]))
         print(colored("[2] Descifrar mensaje", "blue", attrs=["bold"]))
         print(colored("[3] Cerrar sesión", "blue", attrs=["bold"]))
@@ -86,7 +83,7 @@ def opc_log(val):
         if eleccion == 1:   
             print(colored("AVISO, este mensaje estará cifrado por cesar!", "red", attrs=["bold"]))
             mensaje = input(colored("Escribe tu mensaje > ", "blue", attrs=["bold"]))
-            #se envia el mensaje y la llave para encriptar
+            #Se envia el mensaje y la llave para encriptar
             enc_msj(mensaje, 3)
         elif eleccion == 2:
             print(colored("Sugerencia: copia y pega abajo el mensaje encriptado", "red", attrs=["bold"]))
@@ -95,36 +92,36 @@ def opc_log(val):
         elif eleccion < 1 or eleccion > 2:
             val = False
 
-#para encriptar el mensaje   
+#Para encriptar el mensaje   
 def enc_msj(mensaje, llave_cesar):  
-    global SIMBOLOS
-    SIMBOLOS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
-    resultado = ''
+    global simbolos
+    simbolos = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890"
+    resultado = ""
     for simbolo in mensaje:
-        if simbolo in SIMBOLOS:
-            indiceSimbolo = SIMBOLOS.find(simbolo)
+        if simbolo in simbolos:
+            indiceSimbolo = simbolos.find(simbolo)
             indiceNuevo = indiceSimbolo + llave_cesar
-            if indiceNuevo >= len(SIMBOLOS):
-                indiceNuevo = indiceNuevo - len(SIMBOLOS)
+            if indiceNuevo >= len(simbolos):
+                indiceNuevo = indiceNuevo - len(simbolos)
             elif indiceNuevo < 0:
-                indiceNuevo = indiceNuevo + len(SIMBOLOS)
-            resultado = resultado + SIMBOLOS[indiceNuevo]
+                indiceNuevo = indiceNuevo + len(simbolos)
+            resultado = resultado + simbolos[indiceNuevo]
         else:
             resultado = resultado + simbolo
     print(colored("Mensaje encriptado > " + resultado +'\n' + "apúntalo!", "red", attrs=["bold"]))
 
-#para desencriptar el mensaje   
+#Para desencriptar el mensaje   
 def desenc_msj(mensaje, llave_cesar): 
-    resultado = ''
+    resultado = ""
     for simbolo2 in mensaje:
-        if simbolo2 in SIMBOLOS:
-            indiceSimbolo = SIMBOLOS.find(simbolo2)
+        if simbolo2 in simbolos:
+            indiceSimbolo = simbolos.find(simbolo2)
             indiceNuevo = indiceSimbolo - llave_cesar
-            if indiceNuevo >= len(SIMBOLOS):
-                indiceNuevo = indiceNuevo - len(SIMBOLOS)
+            if indiceNuevo >= len(simbolos):
+                indiceNuevo = indiceNuevo - len(simbolos)
             elif indiceNuevo < 0:
-                indiceNuevo = indiceNuevo + len(SIMBOLOS)
-            resultado = resultado + SIMBOLOS[indiceNuevo]
+                indiceNuevo = indiceNuevo + len(simbolos)
+            resultado = resultado + simbolos[indiceNuevo]
         else:
             resultado = resultado + simbolo2
     print(colored("Mensaje desencriptado > " + resultado, "red", attrs=["bold"]))
@@ -138,31 +135,31 @@ def main():
         print(colored("[3] Limpiar", "blue", attrs=["bold"]))
         print(colored("[4] Salir", "blue", attrs=["bold"]))
         opc = int(input(colored("[*] Selecciona una opción > ", "blue", attrs=["bold"])))
-        #si se elige 1 manda al login
+        #Si se elige 1 manda al login
         if opc == 1:            
-            passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
-            #aqui se comprobaría la existencia del usuario
-            login(passw) 
-            #le mando el valor que se obtiene al validar el usuario
+            certificado: bytes = input((colored("Certificado (.cer) > ", "blue", attrs=["bold"])))
+            privada: bytes = input((colored("Clave privada (.key) > ", "blue", attrs=["bold"])))
+            passw = input((colored("Contraseña de la clave privada > ", "blue", attrs=["bold"])))
+            #Aqui se comprobaría la existencia del usuario
+            login(privada, certificado, passw) 
+            #Le mando el valor que se obtiene al validar el usuario
             opc_log(valor)            
-        #si se elige 2 manda al registro
-        if opc == 2:
-            user = input((colored("Ingresa el nombre de usuario > ", "blue", attrs=["bold"])))
-            passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
-            passwConf = input((colored("Ingresa de nuevo la contraseña > ", "blue", attrs=["bold"])))
-            #para verificar la contraseña
-            while (passw != passwConf):
-                print(colored("Las contraseñas no coinciden, ingresa nuevamente", "red", attrs=["bold"]))
-                user = input((colored("Ingresa el nombre de usuario > ", "blue", attrs=["bold"])))
-                passw = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
-                passwConf = input((colored("Ingresa de nuevo la contraseña > ", "blue", attrs=["bold"])))
-            #print(colored("Listo!, usuario registrado exitosamente.", "green", attrs=["bold"]))
-            register(user, passw)
+        #Si se elige 2 manda al registro
+        if opc == 2:            
+            #Para verificar la contraseña
+            while(True):
+                user = input((colored("Ingresa el nombre del usuario > ", "blue", attrs=["bold"])))
+                password = input((colored("Ingresa la contraseña > ", "blue", attrs=["bold"])))
+                if not user or not password:
+                    print(colored("El nombre del usuario y la contraseña son datos obligatorios!", "red", attrs=["bold"]))
+                else:
+                    register(user, password)
+                    break                    
         if opc == 3:
             clear()
         if opc < 1 or opc > 3:
             print(colored("Hasta luego!", "blue", attrs=["bold"]))
-            break
+            return False
 
 if __name__ == "__main__":
     main()
