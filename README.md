@@ -1,19 +1,6 @@
 # Sistema-Criptografico
 Se desarrollará un programa que permita guardar información encriptada y firmada, de manera que se pueda identificar que usuario la almaceno por medio de certificados digitales.
-## Información
-- Materia: Criptografía
-- Maestro: Alejandro Muniz Solorio
-- Grupo: 063
-- Nombre del Proyecto: Sistema-Criptografico
-## Equipo
-| Matricula | Alumno |
-| --- | --- |
-| 1722867 | Jonathan Misael López Zúñiga |
-| 1633050 | Luis Arturo Luna Villa |
-| 1797795 | Sebastián González Medellín |
-| 1742657 | Brenda Cecilia Herrera Treviño |
-| 1799484 | Deborah Candox Rodriguez Casiano |
-| 2034154 | Andrés Hernández Mata |
+
 ## Instalación
 Desde la carpte src que esta en repositorio.
 ```	
